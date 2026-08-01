@@ -49,6 +49,8 @@ SERVICE_SIGNATURES = {
 REQUEST = (
     "HEAD / HTTP/1.1\r\n"
     "Host: {host}\r\n"
+    "User-Agent: 6EYES Scanner\r\n"
+    "Accept: */*\r\n"
     "Connection: close\r\n"
     "\r\n"
 )
@@ -205,3 +207,4 @@ RISK_RULES = {
     }
 }
 
+BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"

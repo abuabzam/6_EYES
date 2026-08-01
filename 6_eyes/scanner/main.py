@@ -4,6 +4,7 @@ import port_scanner
 import risk_analyzer
 import report_generator
 import url_validator
+import vulnerability_scanner
 
 targets = []
 scan_result = []
@@ -97,14 +98,25 @@ risks = []
 for result in scan_result:
 
     if result["state"] == "OPEN":
+
         risk = risk_analyzer.get_risk_info(result["service"])
+
+        vulnerabilities = vulnerability_scanner.get_vulnerabilities(
+            result["server"],
+            result["version"]
+        )
+
     else:
+
         risk = {
             "risk": "-",
             "score_penalty": 0
         }
 
+        vulnerabilities = []
+
     result["risk"] = risk
+    result["vulnerabilities"] = vulnerabilities
 
     risks.append(risk)
 

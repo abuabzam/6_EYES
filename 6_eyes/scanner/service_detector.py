@@ -1,7 +1,7 @@
 import socket
 import ssl
 import config
-
+import banner_parser
 
 def detect_service(ip, port, version,hostname = None):
   
@@ -33,22 +33,46 @@ def detect_service(ip, port, version,hostname = None):
             request = config.REQUEST.format(host= host)
             sock.sendall(request.encode())
 
-        # Set a shorter timeout specifically for banner grabbing once connected
+        
+        
         sock.settimeout(1.5)
-        banner = sock.recv(config.BUFFER_SIZE)
+        chunks = []
 
-        if not banner:
+        total_size = 0
+        max_size = 8192      
+
+        while True:
+
+            try:
+
+                data = sock.recv(config.BUFFER_SIZE)
+
+                if not data:
+                    break
+
+                chunks.append(data)
+
+                total_size += len(data)
+
+                if total_size >= max_size:
+                    break
+
+            except socket.timeout:
+                break
+
+        if not chunks:
             return None
 
-        banner = banner.decode(errors="ignore").strip()
-        banner = banner.splitlines()[0]
+        banner = b"".join(chunks).decode(errors="ignore").strip()
+
+        
         return banner
 
     except socket.timeout:
         return None
 
     except ssl.SSLError as error:
-        print(f"[SSL ERROR] {ip}:{port} -> {error}")
+        return None
 
     except socket.error as error:
         print(f"[SOCKET ERROR] {ip}:{port} -> {error}")
@@ -80,15 +104,19 @@ def identify_service(banner,port):
 
 def detect_and_identify(ip, port, version,hostname= None):
    
-    banner = detect_service(ip, port, version ,hostname)
+    banner = detect_service(ip, port, version, hostname)
+
+    parsed = banner_parser.parse_banner(banner)
+
     return {
     "port": port,
     "state": "OPEN",
-    "banner": banner,
+    "banner": parsed["banner"],
     "default_service": known_port_detection(port),
-    "service": identify_service(banner, port)
+    "service": identify_service(banner, port),
+    "product": parsed["product"],
+    "version": parsed["version"]
     }
-   
 
 def known_port_detection(port):
     return config.KNOWN_PORT_SERVICES.get(port, "Unknown Service")
